@@ -23,12 +23,50 @@ Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):en
                  num_labels, (hidden_layer_size + 1));
 
 % Setup some useful variables
-m = size(X, 1);
-         
+m = size(X, 1)
+K = num_labels        
 % You need to return the following variables correctly 
 J = 0;
+
 Theta1_grad = zeros(size(Theta1));
 Theta2_grad = zeros(size(Theta2));
+
+for i = 1:m
+  [hx z2 z3] = ForwardPropagate(X(i,:)', Theta1, Theta2);
+  yi = (1:num_labels == y(i))';
+  log1 = log(hx); 
+  log2 = log(1-hx);
+  delta3 = hx-yi;
+  
+  delta2 = ((Theta2'*delta3)(2:end)) .* sigmoidGradient(z2);
+  
+  a2 = [1; sigmoid(z2)];
+  a1 = [1; X(i,:)'];
+  Theta1_grad += delta2*(a1');
+  Theta2_grad += delta3*(a2');
+  
+  for k = 1:K
+    J += yi(k)*(log1(k)) + (1-yi(k))*(log2(k));
+  end
+end
+
+Theta1_grad /= m;
+Theta2_grad /= m;
+
+Theta1_grad(:, 2:end) += (lambda/m)*Theta1(:, 2:end);
+Theta2_grad(:, 2:end) += (lambda/m)*Theta2(:, 2:end);
+
+J *= -1/m;
+t1_sq = Theta1.^2;
+t1_sq = t1_sq(:, 2:end);
+t2_sq = Theta2.^2;
+t2_sq = t2_sq(:, 2:end);
+summ = sum(t1_sq(:)) + sum(t2_sq(:));
+J += (lambda/(2*m))*summ;    
+
+
+
+
 
 % ====================== YOUR CODE HERE ======================
 % Instructions: You should complete the code by working through the
@@ -61,31 +99,23 @@ Theta2_grad = zeros(size(Theta2));
 %               the regularization separately and then add them to Theta1_grad
 %               and Theta2_grad from Part 2.
 %
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 % -------------------------------------------------------------
 
 % =========================================================================
 
 % Unroll gradients
 grad = [Theta1_grad(:) ; Theta2_grad(:)];
-
-
 end
+
+function [z] = get_z(theta, a)
+  a = [1; a];
+  z = theta * a;
+endfunction
+
+function [h z2 z3] = ForwardPropagate(X, Theta1, Theta2)
+  z2 = get_z(Theta1, X);
+  a2 = sigmoid(z2);
+  z3 = get_z(Theta2, a2); 
+  h = sigmoid(z3);
+endfunction
+
